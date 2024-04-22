@@ -1,0 +1,373 @@
+'use client';
+import styles from './Plantilla.module.css';
+import { useEffect, useState } from 'react';
+import { IoCall, IoDocument } from 'react-icons/io5';
+import { FaArrowDown, FaArrowUp, FaCamera, FaDollarSign, FaImages, FaLocationDot, FaTrash } from 'react-icons/fa6';
+import { SiFlatpak } from 'react-icons/si';
+import { BiSolidFlag } from 'react-icons/bi';
+import html2canvas from 'html2canvas';
+import { IoMdDocument } from 'react-icons/io';
+
+interface PubInfo {
+  tipoPublicacion: string;
+  tipoInmueble: string;
+  ubicacion: {
+    municipio: string;
+    direccion: string;
+    distancia?: string;
+  };
+  area: {
+    valor: string;
+    unidad: string;
+  };
+  precio: string;
+  imagenes: File[];
+  detalles?: string;
+}
+
+const tiposPublicaciones = ['Vende', 'Arrienda'];
+const tiposInmuebles = ['Casa', 'Apartaestudio', 'Apartamento', 'Finca', 'Lote', 'Alcoba'];
+
+const formatPrice = (price: string) => {
+  return price.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
+};
+
+export const Plantilla = () => {
+  const [pub, setPub] = useState<PubInfo>({} as PubInfo);
+  const [ubicacion, setUbicacion] = useState<string>('');
+  const [imgPub, setImgPub] = useState<string>('');
+
+  useEffect(() => {
+    handleCapture();
+  }, []);
+
+  useEffect(() => {
+    let timer: NodeJS.Timeout;
+    if (pub) {
+      timer = setTimeout(() => {
+        handleCapture();
+      }, 1000); // Captura la pantalla un segundo después de que cambie "pub"
+    }
+
+    return () => clearTimeout(timer); // Limpia el temporizador en caso de que "pub" cambie antes de que se active el temporizador
+  }, [pub]);
+
+  useEffect(() => {
+    setUbicacion(`${pub.ubicacion?.municipio || '???'} - ${pub.ubicacion?.direccion || '???'}`);
+  }, [pub.ubicacion]);
+
+  const handleChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      // Verifica si pub.imagenes es un array
+      if (!Array.isArray(pub.imagenes)) {
+        // Si no es un array, inicialízalo como un array vacío
+        setPub({ ...pub, imagenes: files });
+      } else {
+        // Si es un array, agrega los nuevos archivos al array existente
+        setPub({ ...pub, imagenes: [...pub.imagenes, ...files] });
+      }
+    }
+  };
+
+  const handleMoveImage = (index: number, direction: 'up' | 'down') => {
+    const images = [...pub.imagenes];
+    const image = images[index];
+    images.splice(index, 1);
+    images.splice(direction === 'up' ? index - 1 : index + 1, 0, image);
+    setPub({ ...pub, imagenes: images });
+  };
+
+  const handleDeleteImage = (index: number) => {
+    const images = [...pub.imagenes];
+    images.splice(index, 1);
+    setPub({ ...pub, imagenes: images });
+  };
+
+  const handleCapture = () => {
+    const plantilla = document.getElementById('plantilla-contenido') as HTMLDivElement;
+    plantilla.style.display = 'block';
+    // Las imagenes que están dentro de la plantilla se ven deformes, por lo que se recortan a un tamaño más pequeño
+    html2canvas(plantilla, {
+      scale: 2,
+      allowTaint: true,
+      useCORS: true,
+      
+    }).then((canvas) => {
+      const img = canvas.toDataURL('image/png');
+      setImgPub(img);
+    });
+
+    plantilla.style.display = 'none';
+  };
+
+  const handleDownload = () => {
+    const a = document.createElement('a');
+    a.href = imgPub;
+    a.download = `Publicación - ${pub.tipoPublicacion?.toLowerCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`;
+    a.click();
+  };
+
+  const handleShareToFacebook = () => {
+    // Implementar la lógica para compartir en Facebook
+    
+  };
+
+  return (
+    <div className={styles['plantilla-container']}>
+      <div className={styles['plantilla-contenido']} id='plantilla-contenido'>
+        <div className={styles['plantilla-header']}>
+          {/*eslint-disable-next-line @next/next/no-img-element*/}
+          <img
+            src={'/img/logo.png'}
+            alt="Logotipo de la inmobiliaria"
+            width={181}
+            height={131}
+          />
+          <h2>Asesorias Juridicas E Inmobiliarias S&J</h2>
+        </div>
+        <div className={styles['plantilla-body']}>
+          <div className={styles['pub-title']}>
+            <h3>Se {pub.tipoPublicacion?.toLowerCase() || '???'} {pub.tipoInmueble?.toLowerCase() || '???'}</h3>
+          </div>
+          <div className={styles['pub-info']}>
+            <div className={styles['pub-item']}>
+              <FaLocationDot />
+              <p><span>Ubicación:</span> {ubicacion}</p>
+            </div>
+            {pub?.ubicacion?.distancia && (
+              <div className={styles['pub-item']}>
+                <BiSolidFlag />
+                <p><span>Distancia:</span> {pub.ubicacion?.distancia || '???'}</p>
+              </div>
+            )}
+            <div className={styles['pub-item']}>
+              <SiFlatpak />
+              <p><span>Área:</span> {pub.area?.valor || '???'} {pub.area?.unidad?.toLocaleLowerCase() || '???'}</p>
+            </div>
+            <div className={styles['pub-item']}>
+              <FaDollarSign />
+              <p><span>Precio:</span> ${pub.precio ? formatPrice(pub.precio) : '???'}</p>
+            </div>
+            <div className={styles['pub-item']}>
+              <IoMdDocument />
+              <p><span>Descripción:</span> {pub.detalles || '???'}</p>
+            </div>
+          </div>
+          <div className={styles['pub-imagenes']}>
+            {pub.imagenes?.length ? (
+              pub.imagenes.map((img, i) => (
+                //eslint-disable-next-line @next/next/no-img-element
+                <img
+                  key={i}
+                  src={URL.createObjectURL(img)}
+                  alt={`Imágen ${i + 1}`}
+                  width={100}
+                  height={100}
+                  style={{ objectFit: 'scale-down' }}
+                />
+              ))
+            ) : (
+              <p>No se han seleccionado imágenes del inmueble</p>
+            )}
+          </div>
+        </div>
+        <div className={styles['plantilla-footer']}>
+          <p>Ventas, licencias urbanismo y construcción, levantamiento topográfico, cancelación de  hipoteca y patrimonio.</p>
+          <div>
+            <IoCall width={30} height={30} />
+            <p>Llámenos 313 337 76 23 - 322 589 72 33</p>
+          </div>
+        </div>
+      </div>
+      <div className={styles['plantilla-form']}>
+        <div className={styles['separador']}>
+          <IoDocument />
+          <h4>Información del inmueble</h4>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='tipoPublicacion'>¿Qué desea hacer? (Vender o arrendar)</label>
+          <select
+            name='tipoPublicacion'
+            id='tipoPublicacion'
+            onChange={(e) => setPub({ ...pub, tipoPublicacion: e.target.value })}
+            defaultValue={''}
+          >
+            <option value='' disabled>Ejemplo. Vende</option>
+            {tiposPublicaciones.map((tipo, i) => (
+              <option key={i} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='tipoInmueble'>¿Qué tipo de inmueble es?</label>
+          <select
+            name='tipoInmueble'
+            id='tipoInmueble'
+            onChange={(e) => setPub({ ...pub, tipoInmueble: e.target.value })}
+            defaultValue={''}
+          >
+            <option>Ejemplo. Casa</option>
+            {tiposInmuebles.map((tipo, i) => (
+              <option key={i} value={tipo}>{tipo}</option>
+            ))}
+          </select>
+        </div>
+        <div className={styles['separador']}>
+          <FaLocationDot />
+          <h4>¿Cuál es la ubicación del inmueble?</h4>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='municipio'>¿En qué municipio se encuentra?</label>
+          <input
+            type='text'
+            name='municipio'
+            id='municipio'
+            placeholder='Ejemplo. Gachetá'
+            onChange={(e) => setPub({ ...pub, ubicacion: { ...pub.ubicacion, municipio: e.target.value } })}
+          />
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='direccion'>¿Cuál es la dirección?</label>
+          <input
+            type='text'
+            name='direccion'
+            id='direccion'
+            placeholder='Ejemplo. Calle 1 # 2-3 o Vereda Bombita km 3'
+            onChange={(e) => setPub({ ...pub, ubicacion: { ...pub.ubicacion, direccion: e.target.value } })}
+          />
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='distancia'>¿Qué distancia hay desde el punto conocido más cercano? (Opcional)</label>
+          <input
+            type='text'
+            name='distancia'
+            id='distancia'
+            placeholder='Ejemplo. A 5 km de la plaza principal'
+            onChange={(e) => setPub({ ...pub, ubicacion: { ...pub.ubicacion, distancia: e.target.value } })}
+          />
+        </div>
+        <div className={styles['separador']}>
+          <SiFlatpak />
+          <h4>¿Cuál es el área del inmueble?</h4>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='valorArea'>¿Cuál es el área total?</label>
+          <input
+            type='text'
+            name='valorArea'
+            id='valorArea'
+            placeholder='Ejemplo. 100'
+            onChange={(e) => setPub({ ...pub, area: { ...pub.area, valor: e.target.value } })}
+          />
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='unidadArea'>¿En qué unidad de medida está el área?</label>
+          <select
+            name='unidadArea'
+            id='unidadArea'
+            onChange={(e) => setPub({ ...pub, area: { ...pub.area, unidad: e.target.value } })}
+            defaultValue={''}
+          >
+            <option value='' disabled>Ejemplo. hectáreas</option>
+            <option value='Metros cuadrados'>Metros cuadrados</option>
+            <option value='Hectáreas'>Hectáreas</option>
+            <option value='Kilómetros cuadrados'>Kilómetros cuadrados</option>
+          </select>
+        </div>
+        <div className={styles['separador']}>
+          <FaDollarSign />
+          <h4>¿Cuál es el precio del inmueble?</h4>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='precio'>¿Cuánto cuesta en pesos colombianos?</label>
+          <input
+            type='text'
+            name='precio'
+            id='precio'
+            placeholder='Ejemplo. 1500000'
+            onChange={(e) => setPub({ ...pub, precio: e.target.value })}
+          />
+        </div>
+        <div className={styles['separador']}>
+          <IoDocument />
+          <h4>Descripción adicional</h4>
+        </div>
+        <div className={styles['form-group']}>
+          <label htmlFor='detalles'>¿Hay algo más que debamos saber?</label>
+          <textarea
+            name='detalles'
+            id='detalles'
+            placeholder='Ejemplo. Casa de dos pisos con 3 habitaciones y 2 baños'
+            onChange={(e) => setPub({ ...pub, detalles: e.target.value })}
+            inlist={3}
+          />
+        </div>
+        <div className={styles['separador']}>
+          <FaImages />
+          <h4>Imágenes del inmueble</h4>
+        </div>
+        <div className={`${styles['form-group']} ${styles['form-file']}`}>
+          <label htmlFor='imagenes'>
+            <FaImages />
+            <span>Toca aquí para seleccionar las imágenes</span>
+          </label>
+          <input
+            type='file'
+            name='imagenes'
+            id='imagenes'
+            multiple
+            accept='image/*'
+            onChange={handleChangeFile}
+          />
+        </div>
+        <div className={styles['imagenes-preview']}>
+          {pub.imagenes?.length ? (
+            pub.imagenes.map((img, i) => (
+              <div key={i}>
+                <span>{i + 1}</span>
+                {/*eslint-disable-next-line @next/next/no-img-element*/}
+                <img
+                  src={URL.createObjectURL(img)}
+                  alt={`Imágen ${i + 1}`}
+                  width={100}
+                  height={100}
+                />
+                <span>{img.name}</span>
+                <div>
+                  {i !== 0 ? <button onClick={() => handleMoveImage(i, 'up')}><FaArrowUp /></button> : null}
+                  {i !== pub.imagenes.length - 1 ? <button onClick={() => handleMoveImage(i, 'down')}><FaArrowDown /></button> : null}
+                  <button onClick={() => handleDeleteImage(i)}><FaTrash /></button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <p>No se han seleccionado imágenes</p>
+          )}
+        </div>
+        <div className={styles['separador']}>
+          <FaCamera />
+          <h4>Previsualización de la publicación</h4>
+        </div>
+        {imgPub ? (
+          <div className={styles['preview-container']}>
+            {/*eslint-disable-next-line @next/next/no-img-element*/}
+            <img
+              src={imgPub}
+              alt='Previsualización de la publicación'
+              width={1000}
+              height={3000}
+            />
+          </div>
+        ) : (
+          <button onClick={handleCapture}>Generar previsualización</button>
+        )}
+        <div className={styles['botones']}>
+          <button onClick={handleDownload}>Descargar publicación</button>
+          <button onClick={() => alert('Compartir en Facebook')}>Compartir en Facebook</button>
+          <button onClick={() => setPub({} as PubInfo)}>Limpiar formulario</button>
+        </div>
+      </div>
+    </div>
+  )
+}
