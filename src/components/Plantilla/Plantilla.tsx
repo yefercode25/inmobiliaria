@@ -1,7 +1,7 @@
 'use client';
 import styles from './Plantilla.module.css';
 import { useEffect, useState } from 'react';
-import { IoCall, IoDocument } from 'react-icons/io5';
+import { IoCall, IoDocument, IoLogoWhatsapp } from 'react-icons/io5';
 import { FaArrowDown, FaArrowUp, FaCamera, FaDollarSign, FaImages, FaLocationDot, FaTrash } from 'react-icons/fa6';
 import { SiFlatpak } from 'react-icons/si';
 import { BiSolidFlag } from 'react-icons/bi';
@@ -18,12 +18,26 @@ interface PubInfo {
   };
   area: {
     valor: string;
-    unidad: string;
   };
   precio: string;
   imagenes: File[];
   detalles?: string;
 }
+
+const defaultPub: PubInfo = {
+  tipoPublicacion: '',
+  tipoInmueble: '',
+  ubicacion: {
+    municipio: '',
+    direccion: '',
+  },
+  area: {
+    valor: '0',
+  },
+  precio: '0',
+  imagenes: [],
+  detalles: '',
+};
 
 const tiposPublicaciones = ['Vende', 'Arrienda'];
 const tiposInmuebles = ['Casa', 'Apartaestudio', 'Apartamento', 'Finca', 'Lote', 'Alcoba'];
@@ -33,7 +47,7 @@ const formatPrice = (price: string) => {
 };
 
 export const Plantilla = () => {
-  const [pub, setPub] = useState<PubInfo>({} as PubInfo);
+  const [pub, setPub] = useState<PubInfo>(defaultPub);
   const [ubicacion, setUbicacion] = useState<string>('');
   const [imgPub, setImgPub] = useState<string>('');
 
@@ -92,7 +106,6 @@ export const Plantilla = () => {
       scale: 2,
       allowTaint: true,
       useCORS: true,
-      
     }).then((canvas) => {
       const img = canvas.toDataURL('image/png');
       setImgPub(img);
@@ -108,9 +121,51 @@ export const Plantilla = () => {
     a.click();
   };
 
-  const handleShareToFacebook = () => {
-    // Implementar la lógica para compartir en Facebook
+  const handleShareToFacebook = async () => {
+    // Validar compatibilidad con la API de Web Share y clipboard
+    if (!navigator.share) {
+      alert('El navegador no soporta compartir contenido');
+      return;
+    }
+
+    if (!navigator.clipboard) {
+      alert('El navegador no soporta copiar al portapapeles');
+      return;
+    }
     
+    // share via browser share api
+    const imageFile = await getConvertedImageToFile(imgPub);
+
+    let textPub = `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} \n\n`
+    textPub += `- Está ubicado en ${ubicacion} y tiene un área de ${pub.area?.valor}. \n`
+    textPub += `- Precio: $${formatPrice(pub.precio)}. \n`
+    textPub += `${pub.detalles || ''} \n\n`
+    textPub += `#AsesoriasJuridicasEInmobiliariasS&J #Inmobiliaria #Venta #Arriendo #Inmueble #Propiedad #BienesRaices`
+
+    // copiar al portapapeles el texto
+    navigator.clipboard.writeText(textPub.trim())
+      .then(() => console.log('Texto copiado al portapapeles'))
+      .catch((error) => console.error('Error al copiar el texto al portapapeles:', error));
+
+    const shareData = {
+      title: `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'}`,
+      text: textPub,
+      files: [imageFile],
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData)
+        .then(() => alert('Compartido con éxito'))
+        .catch((error) => console.error('Error al compartir:', error));
+    } else {
+      alert('El navegador no soporta la API de Web Share');
+    }
+  };
+
+  const getConvertedImageToFile = async (img: string) => {
+    const response = await fetch(img);
+    const blob = await response.blob();
+    return new File([blob], `Publicación - ${pub.tipoPublicacion?.toLowerCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`, { type: 'image/png' });
   };
 
   return (
@@ -124,7 +179,19 @@ export const Plantilla = () => {
             width={181}
             height={131}
           />
-          <h2>Asesorias Juridicas E Inmobiliarias S&J</h2>
+          <div>
+            <h2>Asesorias Juridicas E Inmobiliarias S&J</h2>
+            <div className={styles['contacto']}>
+              <div>
+                <IoCall width={30} height={30} />
+                <p>313 337 76 23</p>
+              </div>
+              <div>
+                <IoLogoWhatsapp width={30} height={30} />
+                <p>310 310 92 87</p>
+              </div>
+            </div>
+          </div>
         </div>
         <div className={styles['plantilla-body']}>
           <div className={styles['pub-title']}>
@@ -143,7 +210,7 @@ export const Plantilla = () => {
             )}
             <div className={styles['pub-item']}>
               <SiFlatpak />
-              <p><span>Área:</span> {pub.area?.valor || '???'} {pub.area?.unidad?.toLocaleLowerCase() || '???'}</p>
+              <p><span>Área:</span> {pub.area?.valor || '???'}</p>
             </div>
             <div className={styles['pub-item']}>
               <FaDollarSign />
@@ -173,11 +240,7 @@ export const Plantilla = () => {
           </div>
         </div>
         <div className={styles['plantilla-footer']}>
-          <p>Ventas, licencias urbanismo y construcción, levantamiento topográfico, cancelación de  hipoteca y patrimonio.</p>
-          <div>
-            <IoCall width={30} height={30} />
-            <p>Llámenos 313 337 76 23 - 322 589 72 33</p>
-          </div>
+          <p>Ventas, licencias  urbanismo y construcción, levantamiento topográfico, cancelación de hipoteca, patrimonio, embargos. Englobes, desenglobes. Trámites Notariales, judiciales y otros.</p>
         </div>
       </div>
       <div className={styles['plantilla-form']}>
@@ -260,20 +323,6 @@ export const Plantilla = () => {
             placeholder='Ejemplo. 100'
             onChange={(e) => setPub({ ...pub, area: { ...pub.area, valor: e.target.value } })}
           />
-        </div>
-        <div className={styles['form-group']}>
-          <label htmlFor='unidadArea'>¿En qué unidad de medida está el área?</label>
-          <select
-            name='unidadArea'
-            id='unidadArea'
-            onChange={(e) => setPub({ ...pub, area: { ...pub.area, unidad: e.target.value } })}
-            defaultValue={''}
-          >
-            <option value='' disabled>Ejemplo. hectáreas</option>
-            <option value='Metros cuadrados'>Metros cuadrados</option>
-            <option value='Hectáreas'>Hectáreas</option>
-            <option value='Kilómetros cuadrados'>Kilómetros cuadrados</option>
-          </select>
         </div>
         <div className={styles['separador']}>
           <FaDollarSign />
@@ -364,7 +413,7 @@ export const Plantilla = () => {
         )}
         <div className={styles['botones']}>
           <button onClick={handleDownload}>Descargar publicación</button>
-          <button onClick={() => alert('Compartir en Facebook')}>Compartir en Facebook</button>
+          <button onClick={handleShareToFacebook}>Compartir en Facebook</button>
           <button onClick={() => setPub({} as PubInfo)}>Limpiar formulario</button>
         </div>
       </div>

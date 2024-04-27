@@ -25,6 +25,21 @@
   font-weight: bold;
 }
 
+.plantilla-header .contacto {
+  display: flex;
+  gap: 20px;
+  font-size: 28px;
+  font-weight: bold;
+  margin-top: 15px;
+  justify-content: center;
+}
+
+.plantilla-header .contacto div {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
 .plantilla-body {
   padding: 30px 50px;
 }
@@ -69,6 +84,7 @@
 .plantilla-body  .pub-title {
   text-align: center;
   font-size: 50px;
+  text-transform: uppercase;
 }
 
 .plantilla-body .pub-info {
@@ -103,7 +119,6 @@
 .plantilla-footer > p {
   font-weight: bold;
   font-size: 35px;
-  margin-bottom: 20px;
 }
 
 .plantilla-footer div {
