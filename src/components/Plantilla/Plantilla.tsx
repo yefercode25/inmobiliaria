@@ -117,7 +117,7 @@ export const Plantilla = () => {
   const handleDownload = () => {
     const a = document.createElement('a');
     a.href = imgPub;
-    a.download = `Publicación - ${pub.tipoPublicacion?.toLowerCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`;
+    a.download = `Publicación - ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`;
     a.click();
   };
 
@@ -136,10 +136,10 @@ export const Plantilla = () => {
     // share via browser share api
     const imageFile = await getConvertedImageToFile(imgPub);
 
-    let textPub = `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} \n\n`
-    textPub += `- Está ubicado en ${ubicacion} y tiene un área de ${pub.area?.valor}. \n`
-    textPub += `- Precio: $${formatPrice(pub.precio)}. \n`
-    textPub += `${pub.detalles || ''} \n\n`
+    let textPub = `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} \n\n`;
+    textPub += `- Está ubicado en ${ubicacion} y tiene un área de ${pub.area?.valor}. \n`;
+    textPub += `- Precio: $${formatPrice(pub.precio)}. \n\n`;
+    textPub += `${pub.detalles || ''} \n\n`;
     textPub += `#AsesoriasJuridicasEInmobiliariasS&J #Inmobiliaria #Venta #Arriendo #Inmueble #Propiedad #BienesRaices`
 
     // copiar al portapapeles el texto
@@ -148,7 +148,7 @@ export const Plantilla = () => {
       .catch((error) => console.error('Error al copiar el texto al portapapeles:', error));
 
     const shareData = {
-      title: `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'}`,
+      title: `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'}`,
       text: textPub,
       files: [imageFile],
     };
@@ -165,7 +165,7 @@ export const Plantilla = () => {
   const getConvertedImageToFile = async (img: string) => {
     const response = await fetch(img);
     const blob = await response.blob();
-    return new File([blob], `Publicación - ${pub.tipoPublicacion?.toLowerCase() || '???'} ${pub.tipoInmueble?.toLowerCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`, { type: 'image/png' });
+    return new File([blob], `Publicación - ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`, { type: 'image/png' });
   };
 
   return (
@@ -195,7 +195,7 @@ export const Plantilla = () => {
         </div>
         <div className={styles['plantilla-body']}>
           <div className={styles['pub-title']}>
-            <h3>Se {pub.tipoPublicacion?.toLowerCase() || '???'} {pub.tipoInmueble?.toLowerCase() || '???'}</h3>
+            <h3>Se {pub.tipoPublicacion?.toUpperCase() || '???'} {pub.tipoInmueble?.toUpperCase() || '???'}</h3>
           </div>
           <div className={styles['pub-info']}>
             <div className={styles['pub-item']}>
