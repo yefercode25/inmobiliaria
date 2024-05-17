@@ -39,7 +39,7 @@ const defaultPub: PubInfo = {
   detalles: '',
 };
 
-const tiposPublicaciones = ['Vende', 'Arrienda'];
+const tiposPublicaciones = [ 'Arrienda', 'Busca administrador para', 'Permuta', 'Vende'];
 const tiposInmuebles = ['Casa', 'Apartaestudio', 'Apartamento', 'Finca', 'Lote', 'Alcoba'];
 
 const formatPrice = (price: string) => {
@@ -132,7 +132,7 @@ export const Plantilla = () => {
       alert('El navegador no soporta copiar al portapapeles');
       return;
     }
-    
+
     // share via browser share api
     const imageFile = await getConvertedImageToFile(imgPub);
 
