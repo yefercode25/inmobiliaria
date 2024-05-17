@@ -100,6 +100,11 @@
   margin-bottom: 15px;
 }
 
+.plantilla-body .pub-item.pub-descripcion {
+  display: block;
+  margin-bottom: 10px;
+}
+
 .plantilla-body .pub-item svg {
   font-size: 25px;
   min-width: 26px;
@@ -108,6 +113,22 @@
 .plantilla-body .pub-item span {
   font-weight: bold;
 }
+
+.plantilla-body .pub-descripcion div {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.plantilla-body .pub-descripcion div p {
+  margin: 0;
+}
+
+.plantilla-body .pub-descripcion pre {
+  all: unset;
+  white-space: pre-wrap;
+}
+
 
 .plantilla-footer {
   background-color: var(--primary-color);

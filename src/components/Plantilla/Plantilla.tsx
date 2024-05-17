@@ -7,6 +7,7 @@ import { SiFlatpak } from 'react-icons/si';
 import { BiSolidFlag } from 'react-icons/bi';
 import html2canvas from 'html2canvas';
 import { IoMdDocument } from 'react-icons/io';
+import Swal from 'sweetalert2';
 
 interface PubInfo {
   tipoPublicacion: string;
@@ -25,22 +26,22 @@ interface PubInfo {
 }
 
 const defaultPub: PubInfo = {
-  tipoPublicacion: '',
-  tipoInmueble: '',
+  imagenes: [] as File[],
   ubicacion: {
     municipio: '',
     direccion: '',
   },
   area: {
-    valor: '0',
+    valor: '',
   },
-  precio: '0',
-  imagenes: [],
-  detalles: '',
-};
+} as PubInfo;
 
-const tiposPublicaciones = [ 'Arrienda', 'Busca administrador para', 'Permuta', 'Vende'];
-const tiposInmuebles = ['Casa', 'Apartaestudio', 'Apartamento', 'Finca', 'Lote', 'Alcoba'];
+const tiposPublicaciones = ['Arrienda', 'Busca administrador para', 'Permuta', 'Vende'];
+const tiposInmuebles = [
+  'Alcoba', 'Apartaestudio', 'Apartamento', 'Bodega', 'Casa', 'Casa lote',
+  'Casa quinta', 'Finca', 'Finca campestre', 'Finca recreacional - Glamping',
+  'Finca turística', 'Finca vacacional', 'Local', 'Lote',
+];
 
 const formatPrice = (price: string) => {
   return price.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
@@ -67,7 +68,7 @@ export const Plantilla = () => {
   }, [pub]);
 
   useEffect(() => {
-    setUbicacion(`${pub.ubicacion?.municipio || '???'} - ${pub.ubicacion?.direccion || '???'}`);
+    setUbicacion(`${pub.ubicacion?.municipio || '(PREG 3)'} - ${pub.ubicacion?.direccion || '(PREG 4)'}`);
   }, [pub.ubicacion]);
 
   const handleChangeFile = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -115,23 +116,49 @@ export const Plantilla = () => {
   };
 
   const handleDownload = () => {
+    if (!validateFields()) return;
+
     const a = document.createElement('a');
     a.href = imgPub;
     a.download = `Publicación - ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`;
     a.click();
   };
 
+  const validateFields = () => {
+    const newErrors = [];
+    if (!pub.tipoPublicacion) newErrors.push('Selecciona una opción en el campo "¿Qué desea hacer?"');
+    if (!pub.tipoInmueble) newErrors.push('Selecciona una opción en el campo "¿Qué tipo de inmueble es?"');
+    if (!pub.ubicacion.municipio) newErrors.push('Ingresa el municipio en el campo "¿En qué municipio se encuentra?"');
+    if (!pub.ubicacion.direccion) newErrors.push('Ingresa la dirección en el campo "¿Cuál es la dirección?"');
+    if (!pub.area.valor || pub.area.valor === '0') newErrors.push('Ingresa el área en el campo "¿Cuál es el área del inmueble?"');
+    if (!pub.precio || pub.precio === '0') newErrors.push('Ingresa el precio en el campo "¿Cuál es el precio del inmueble?"');
+    if (!pub.detalles || pub.detalles.length < 10) newErrors.push('Ingresa una descripción adicional de al menos 10 caracteres');
+    if (!pub.imagenes.length) newErrors.push('Debes seleccionar al menos una imagen del inmueble');
+
+    if (newErrors.length) {
+      // Mostrar solo el primer error
+      Swal.fire({
+        icon: 'warning',
+        title: newErrors[0],
+      });
+    }
+
+    return newErrors.length === 0;
+  };
+
   const handleShareToFacebook = async () => {
     // Validar compatibilidad con la API de Web Share y clipboard
     if (!navigator.share) {
-      alert('El navegador no soporta compartir contenido');
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta compartir contenido por una aplicación externa' });
       return;
     }
 
     if (!navigator.clipboard) {
-      alert('El navegador no soporta copiar al portapapeles');
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta copiar al portapapeles' });
       return;
     }
+
+    if (!validateFields()) return;
 
     // share via browser share api
     const imageFile = await getConvertedImageToFile(imgPub);
@@ -155,10 +182,10 @@ export const Plantilla = () => {
 
     if (navigator.share) {
       navigator.share(shareData)
-        .then(() => alert('Compartido con éxito'))
+        .then(() => Swal.fire({ icon: 'success', title: 'Publicación compartida con éxito' }))
         .catch((error) => console.error('Error al compartir:', error));
     } else {
-      alert('El navegador no soporta la API de Web Share');
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta la API de Web Share' });
     }
   };
 
@@ -195,30 +222,33 @@ export const Plantilla = () => {
         </div>
         <div className={styles['plantilla-body']}>
           <div className={styles['pub-title']}>
-            <h3>Se {pub.tipoPublicacion?.toUpperCase() || '???'} {pub.tipoInmueble?.toUpperCase() || '???'}</h3>
+            <h3>Se {pub.tipoPublicacion?.toUpperCase() || '(PREG 1)'} {pub.tipoInmueble?.toUpperCase() || '(PREG 2)'}</h3>
           </div>
           <div className={styles['pub-info']}>
             <div className={styles['pub-item']}>
               <FaLocationDot />
-              <p><span>Ubicación:</span> {ubicacion}</p>
+              <p><span>Ubicación:</span> {ubicacion ?? '(PREG 3, 4)'}</p>
             </div>
             {pub?.ubicacion?.distancia && (
               <div className={styles['pub-item']}>
                 <BiSolidFlag />
-                <p><span>Distancia:</span> {pub.ubicacion?.distancia || '???'}</p>
+                <p><span>Distancia:</span> {pub.ubicacion?.distancia || '(PREG 5)'}</p>
               </div>
             )}
             <div className={styles['pub-item']}>
               <SiFlatpak />
-              <p><span>Área:</span> {pub.area?.valor || '???'}</p>
+              <p><span>Área:</span> {pub.area?.valor || '(PREG 6)'}</p>
             </div>
             <div className={styles['pub-item']}>
               <FaDollarSign />
-              <p><span>Precio:</span> ${pub.precio ? formatPrice(pub.precio) : '???'}</p>
+              <p><span>Precio:</span> ${pub.precio ? formatPrice(pub.precio) : '(PREG 7)'}</p>
             </div>
-            <div className={styles['pub-item']}>
-              <IoMdDocument />
-              <p><span>Descripción:</span> {pub.detalles || '???'}</p>
+            <div className={`${styles['pub-item']} ${styles['pub-descripcion']}`}>
+              <div>
+                <IoMdDocument />
+                <p><span>Descripción del inmueble:</span></p>
+              </div>
+              <pre>{pub.detalles || '(PREG 8)'}</pre>
             </div>
           </div>
           <div className={styles['pub-imagenes']}>
@@ -235,7 +265,7 @@ export const Plantilla = () => {
                 />
               ))
             ) : (
-              <p>No se han seleccionado imágenes del inmueble</p>
+              <p>(PREG 9) Seleccione las imágenes del inmueble</p>
             )}
           </div>
         </div>
@@ -249,7 +279,7 @@ export const Plantilla = () => {
           <h4>Información del inmueble</h4>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='tipoPublicacion'>¿Qué desea hacer? (Vender o arrendar)</label>
+          <label htmlFor='tipoPublicacion'>1. ¿Qué desea hacer? (Vender o arrendar)</label>
           <select
             name='tipoPublicacion'
             id='tipoPublicacion'
@@ -263,7 +293,7 @@ export const Plantilla = () => {
           </select>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='tipoInmueble'>¿Qué tipo de inmueble es?</label>
+          <label htmlFor='tipoInmueble'>2. ¿Qué tipo de inmueble es?</label>
           <select
             name='tipoInmueble'
             id='tipoInmueble'
@@ -281,7 +311,7 @@ export const Plantilla = () => {
           <h4>¿Cuál es la ubicación del inmueble?</h4>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='municipio'>¿En qué municipio se encuentra?</label>
+          <label htmlFor='municipio'>3. ¿En qué municipio se encuentra?</label>
           <input
             type='text'
             name='municipio'
@@ -291,7 +321,7 @@ export const Plantilla = () => {
           />
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='direccion'>¿Cuál es la dirección?</label>
+          <label htmlFor='direccion'>4. ¿Cuál es la dirección?</label>
           <input
             type='text'
             name='direccion'
@@ -301,7 +331,7 @@ export const Plantilla = () => {
           />
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='distancia'>¿Qué distancia hay desde el punto conocido más cercano? (Opcional)</label>
+          <label htmlFor='distancia'>5. ¿Qué distancia hay desde el punto conocido más cercano? (Opcional)</label>
           <input
             type='text'
             name='distancia'
@@ -315,7 +345,7 @@ export const Plantilla = () => {
           <h4>¿Cuál es el área del inmueble?</h4>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='valorArea'>¿Cuál es el área total?</label>
+          <label htmlFor='valorArea'>6. ¿Cuál es el área total?</label>
           <input
             type='text'
             name='valorArea'
@@ -329,7 +359,7 @@ export const Plantilla = () => {
           <h4>¿Cuál es el precio del inmueble?</h4>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='precio'>¿Cuánto cuesta en pesos colombianos?</label>
+          <label htmlFor='precio'>7. ¿Cuánto cuesta en pesos colombianos?</label>
           <input
             type='text'
             name='precio'
@@ -343,7 +373,7 @@ export const Plantilla = () => {
           <h4>Descripción adicional</h4>
         </div>
         <div className={styles['form-group']}>
-          <label htmlFor='detalles'>¿Hay algo más que debamos saber?</label>
+          <label htmlFor='detalles'>8. ¿Hay algo más que debamos saber?</label>
           <textarea
             name='detalles'
             id='detalles'
@@ -359,7 +389,7 @@ export const Plantilla = () => {
         <div className={`${styles['form-group']} ${styles['form-file']}`}>
           <label htmlFor='imagenes'>
             <FaImages />
-            <span>Toca aquí para seleccionar las imágenes</span>
+            <span>9. Toca aquí para seleccionar las imágenes</span>
           </label>
           <input
             type='file'
