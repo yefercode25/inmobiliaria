@@ -112,7 +112,7 @@ export const Plantilla = () => {
       setImgPub(img);
     });
 
-    plantilla.style.display = 'none';
+    // plantilla.style.display = 'none';
   };
 
   const handleDownload = () => {
@@ -221,48 +221,67 @@ export const Plantilla = () => {
           </div>
         </div>
         <div className={styles['plantilla-body']}>
-          <div className={styles['pub-title']}>
-            <h3>Se {pub.tipoPublicacion?.toUpperCase() || '(PREG 1)'} {pub.tipoInmueble?.toUpperCase() || '(PREG 2)'}</h3>
-          </div>
-          <div className={styles['pub-info']}>
-            <div className={styles['pub-item']}>
-              <FaLocationDot />
-              <p><span>Ubicación:</span> {ubicacion ?? '(PREG 3, 4)'}</p>
+          <div>
+            <img
+              className={styles['watermark']}
+              src='/img/SJ Water Mark.png'
+              alt='Logotipo de la inmobiliaria'
+              width={300} height={300}
+            />
+            <div className={styles['pub-title']}>
+              <h3>Se {pub.tipoPublicacion?.toUpperCase() || '(PREG 1)'} {pub.tipoInmueble?.toUpperCase() || '(PREG 2)'}</h3>
             </div>
-            {pub?.ubicacion?.distancia && (
+            <div className={styles['pub-info']}>
               <div className={styles['pub-item']}>
-                <BiSolidFlag />
-                <p><span>Distancia:</span> {pub.ubicacion?.distancia || '(PREG 5)'}</p>
+                <FaLocationDot />
+                <p><span>Ubicación:</span> {ubicacion ?? '(PREG 3, 4)'}</p>
               </div>
-            )}
-            <div className={styles['pub-item']}>
-              <SiFlatpak />
-              <p><span>Área:</span> {pub.area?.valor || '(PREG 6)'}</p>
-            </div>
-            <div className={styles['pub-item']}>
-              <FaDollarSign />
-              <p><span>Precio:</span> ${pub.precio ? formatPrice(pub.precio) : '(PREG 7)'}</p>
-            </div>
-            <div className={`${styles['pub-item']} ${styles['pub-descripcion']}`}>
-              <div>
-                <IoMdDocument />
-                <p><span>Descripción del inmueble:</span></p>
+              {pub?.ubicacion?.distancia && (
+                <div className={styles['pub-item']}>
+                  <BiSolidFlag />
+                  <p><span>Distancia:</span> {pub.ubicacion?.distancia || '(PREG 5)'}</p>
+                </div>
+              )}
+              <div className={styles['pub-item']}>
+                <SiFlatpak />
+                <p><span>Área:</span> {pub.area?.valor || '(PREG 6)'}</p>
               </div>
-              <pre>{pub.detalles || '(PREG 8)'}</pre>
+              <div className={styles['pub-item']}>
+                <FaDollarSign />
+                <p><span>Precio:</span> ${pub.precio ? formatPrice(pub.precio) : '(PREG 7)'}</p>
+              </div>
+              <div className={`${styles['pub-item']} ${styles['pub-descripcion']}`}>
+                <div>
+                  <IoMdDocument />
+                  <p><span>Descripción del inmueble:</span></p>
+                </div>
+                <pre>{pub.detalles || '(PREG 8)'}</pre>
+              </div>
             </div>
           </div>
           <div className={styles['pub-imagenes']}>
             {pub.imagenes?.length ? (
               pub.imagenes.map((img, i) => (
                 //eslint-disable-next-line @next/next/no-img-element
-                <img
+                <div
                   key={i}
-                  src={URL.createObjectURL(img)}
-                  alt={`Imágen ${i + 1}`}
-                  width={100}
-                  height={100}
-                  style={{ objectFit: 'scale-down' }}
-                />
+                >
+                  <div className={styles['img-watermark']}>
+                    <img
+                      className={styles['watermark']}
+                      src='/img/SJ Water Mark.png'
+                      alt='Logotipo de la inmobiliaria'
+                      width={50} height={50}
+                    />
+                  </div>
+                  <img
+                    src={URL.createObjectURL(img)}
+                    alt={`Imágen ${i + 1}`}
+                    width={100}
+                    height={100}
+                    style={{ objectFit: 'scale-down' }}
+                  />
+                </div>
               ))
             ) : (
               <p>(PREG 9) Seleccione las imágenes del inmueble</p>
