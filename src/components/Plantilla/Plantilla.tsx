@@ -112,7 +112,7 @@ export const Plantilla = () => {
       setImgPub(img);
     });
 
-    // plantilla.style.display = 'none';
+    plantilla.style.display = 'none';
   };
 
   const handleDownload = () => {

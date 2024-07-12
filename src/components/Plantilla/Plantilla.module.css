@@ -7,7 +7,7 @@
 .plantilla-contenido {
   min-width: var(--img-width);
   font-family: 'Libre Baskerville', serif;
-  /* display: none; */
+  display: none;
 }
 
 .plantilla-header {
