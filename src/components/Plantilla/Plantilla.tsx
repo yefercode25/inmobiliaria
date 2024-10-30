@@ -5,49 +5,13 @@ import { IoCall, IoDocument, IoLogoWhatsapp } from 'react-icons/io5';
 import { FaArrowDown, FaArrowUp, FaCamera, FaDollarSign, FaImages, FaLocationDot, FaTrash } from 'react-icons/fa6';
 import { SiFlatpak } from 'react-icons/si';
 import { BiSolidFlag } from 'react-icons/bi';
+import html2canvas from 'html2canvas';
 import { IoMdDocument } from 'react-icons/io';
 import Swal from 'sweetalert2';
-import { captureElement } from '@/utils/capture';
-import { validatePublication } from '@/utils/validation';
-import { shareToFacebook } from '@/utils/share';
-
-interface PubInfo {
-  tipoPublicacion: string;
-  tipoInmueble: string;
-  ubicacion: {
-    municipio: string;
-    direccion: string;
-    distancia?: string;
-  };
-  area: {
-    valor: string;
-  };
-  precio: string;
-  imagenes: File[];
-  detalles?: string;
-}
-
-const defaultPub: PubInfo = {
-  imagenes: [] as File[],
-  ubicacion: {
-    municipio: '',
-    direccion: '',
-  },
-  area: {
-    valor: '',
-  },
-} as PubInfo;
-
-const tiposPublicaciones = ['Arrienda', 'Busca administrador para', 'Permuta', 'Vende'];
-const tiposInmuebles = [
-  'Alcoba', 'Apartaestudio', 'Apartamento', 'Bodega', 'Casa', 'Casa lote',
-  'Casa quinta', 'Finca', 'Finca campestre', 'Finca recreacional - Glamping',
-  'Finca turística', 'Finca vacacional', 'Local', 'Lote',
-];
-
-const formatPrice = (price: string) => {
-  return price.replace(/\D/g, '').replace(/(\d)(?=(\d{3})+(?!\d))/g, '$1.');
-};
+import { PubInfo } from '@/types/PubInfo';
+import { defaultPub } from '@/constants/defaultPub';
+import { tiposPublicaciones, tiposInmuebles } from '@/constants/tipos';
+import { formatPrice } from '@/utils/formatPrice';
 
 export const Plantilla = () => {
   const [pub, setPub] = useState<PubInfo>(defaultPub);
@@ -101,20 +65,24 @@ export const Plantilla = () => {
     setPub({ ...pub, imagenes: images });
   };
 
-  const handleCapture = async () => {
-    const img = await captureElement('plantilla-contenido');
-    setImgPub(img);
+  const handleCapture = () => {
+    const plantilla = document.getElementById('plantilla-contenido') as HTMLDivElement;
+    plantilla.style.display = 'block';
+    // Las imagenes que están dentro de la plantilla se ven deformes, por lo que se recortan a un tamaño más pequeño
+    html2canvas(plantilla, {
+      scale: 2,
+      allowTaint: true,
+      useCORS: true,
+    }).then((canvas) => {
+      const img = canvas.toDataURL('image/png');
+      setImgPub(img);
+    });
+
+    plantilla.style.display = 'none';
   };
 
   const handleDownload = () => {
-    const errors = validatePublication(pub);
-    if (errors.length) {
-      Swal.fire({
-        icon: 'warning',
-        title: errors[0],
-      });
-      return;
-    }
+    if (!validateFields()) return;
 
     const a = document.createElement('a');
     a.href = imgPub;
@@ -122,17 +90,75 @@ export const Plantilla = () => {
     a.click();
   };
 
-  const handleShareToFacebook = async () => {
-    const errors = validatePublication(pub);
-    if (errors.length) {
+  const validateFields = () => {
+    const newErrors = [];
+    if (!pub.tipoPublicacion) newErrors.push('Selecciona una opción en el campo "¿Qué desea hacer?"');
+    if (!pub.tipoInmueble) newErrors.push('Selecciona una opción en el campo "¿Qué tipo de inmueble es?"');
+    if (!pub.ubicacion.municipio) newErrors.push('Ingresa el municipio en el campo "¿En qué municipio se encuentra?"');
+    if (!pub.ubicacion.direccion) newErrors.push('Ingresa la dirección en el campo "¿Cuál es la dirección?"');
+    if (!pub.area.valor || pub.area.valor === '0') newErrors.push('Ingresa el área en el campo "¿Cuál es el área del inmueble?"');
+    if (!pub.precio || pub.precio === '0') newErrors.push('Ingresa el precio en el campo "¿Cuál es el precio del inmueble?"');
+    if (!pub.detalles || pub.detalles.length < 10) newErrors.push('Ingresa una descripción adicional de al menos 10 caracteres');
+    if (!pub.imagenes.length) newErrors.push('Debes seleccionar al menos una imagen del inmueble');
+
+    if (newErrors.length) {
+      // Mostrar solo el primer error
       Swal.fire({
         icon: 'warning',
-        title: errors[0],
+        title: newErrors[0],
       });
+    }
+
+    return newErrors.length === 0;
+  };
+
+  const handleShareToFacebook = async () => {
+    // Validar compatibilidad con la API de Web Share y clipboard
+    if (!navigator.share) {
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta compartir contenido por una aplicación externa' });
       return;
     }
 
-    await shareToFacebook(pub, imgPub, ubicacion, formatPrice);
+    if (!navigator.clipboard) {
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta copiar al portapapeles' });
+      return;
+    }
+
+    if (!validateFields()) return;
+
+    // share via browser share api
+    const imageFile = await getConvertedImageToFile(imgPub);
+
+    let textPub = `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} \n\n`;
+    textPub += `- Está ubicado en ${ubicacion} y tiene un área de ${pub.area?.valor}. \n`;
+    textPub += `- Precio: $${formatPrice(pub.precio)}. \n\n`;
+    textPub += `${pub.detalles || ''} \n\n`;
+    textPub += `#AsesoriasJuridicasEInmobiliariasS&J #Inmobiliaria #Venta #Arriendo #Inmueble #Propiedad #BienesRaices`
+
+    // copiar al portapapeles el texto
+    navigator.clipboard.writeText(textPub.trim())
+      .then(() => console.log('Texto copiado al portapapeles'))
+      .catch((error) => console.error('Error al copiar el texto al portapapeles:', error));
+
+    const shareData = {
+      title: `SE ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'}`,
+      text: textPub,
+      files: [imageFile],
+    };
+
+    if (navigator.share) {
+      navigator.share(shareData)
+        .then(() => Swal.fire({ icon: 'success', title: 'Publicación compartida con éxito' }))
+        .catch((error) => console.error('Error al compartir:', error));
+    } else {
+      Swal.fire({ icon: 'error', title: 'El navegador no soporta la API de Web Share' });
+    }
+  };
+
+  const getConvertedImageToFile = async (img: string) => {
+    const response = await fetch(img);
+    const blob = await response.blob();
+    return new File([blob], `Publicación - ${pub.tipoPublicacion?.toUpperCase() || '???'} ${pub.tipoInmueble?.toUpperCase() || '???'} - ${pub?.ubicacion?.direccion?.toLocaleLowerCase() || '???'} - ${new Date().toLocaleDateString()}.png`, { type: 'image/png' });
   };
 
   return (
